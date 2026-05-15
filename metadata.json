@@ -1,0 +1,6 @@
+{
+  "name": "English Day Violation Tracker",
+  "description": "A comprehensive system to monitor and track English Day language violations with automated points, role-based access, and detailed reporting.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}

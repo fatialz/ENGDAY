@@ -1,0 +1,38 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  
+  --color-brand-red: #f43f5e; /* rose-500 */
+  --color-brand-pink: #db2777; /* pink-600 */
+  --color-brand-rose: #e11d48; /* rose-600 */
+  --color-slate-50: #f8fafc;
+  --color-slate-100: #f1f5f9;
+  --color-slate-200: #e2e8f0;
+  --color-slate-400: #94a3b8;
+  --color-slate-500: #64748b;
+  --color-slate-800: #1e293b;
+  --color-slate-900: #0f172a;
+}
+
+@layer base {
+  body {
+    @apply font-sans bg-slate-50 text-slate-900;
+  }
+}
+
+.gradient-brand {
+  @apply bg-gradient-to-br from-rose-500 to-pink-600;
+}
+
+.gradient-text-brand {
+  @apply bg-clip-text text-transparent bg-gradient-to-r from-rose-500 to-pink-500;
+}
+
+.modern-card {
+  @apply bg-white rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-md transition-all duration-300;
+}
+
+.sidebar-item-active {
+  @apply bg-rose-50 text-rose-600 shadow-sm;
+}

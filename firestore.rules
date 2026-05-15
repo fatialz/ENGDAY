@@ -1,0 +1,133 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // 0. Default Deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Helpers ---
+    function isSignedIn() { return request.auth != null; }
+    function isVerified() { return isSignedIn() && request.auth.token.email_verified == true; }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+    
+    // Role Helpers
+    function getProfile() { 
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data; 
+    }
+    function hasRole(role) { 
+      return isSignedIn() && isVerified() && getProfile().role == role; 
+    }
+    function isMaster() {
+      return isSignedIn() && (
+        request.auth.token.email == 'fatia7056@gmail.com' || 
+        request.auth.token.email == 'fatiazahra5690@gmail.com' ||
+        request.auth.token.email.endsWith('@smk.belajar.id')
+      );
+    }
+    function isAdmin() { return isMaster() || hasRole('ADMIN'); }
+    function isPJ() { return isMaster() || hasRole('PJ'); }
+
+    // --- Collections ---
+
+    // System Config
+    match /system/config {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && (isMaster() || !exists(/databases/$(database)/documents/system/config));
+      allow update: if isPJ();
+    }
+
+    // Users
+    match /users/{uid} {
+      allow get: if isSignedIn() && (request.auth.uid == uid || isAdmin() || isPJ());
+      allow list: if isSignedIn() && (isAdmin() || isPJ());
+      
+      function isValidUser(data) {
+        return data.uid is string &&
+               data.email is string &&
+               data.role in ['ADMIN', 'PJ'];
+      }
+
+      allow create: if isSignedIn() && request.auth.uid == uid && isValidUser(incoming()) && incoming().uid == uid;
+      allow update: if (
+        (isAdmin() && incoming().uid == existing().uid && incoming().email == existing().email) || 
+        (request.auth.uid == uid && incoming().uid == existing().uid && incoming().email == existing().email && incoming().role == existing().role)
+      ) && isValidUser(incoming());
+      allow delete: if isAdmin();
+    }
+
+    // Students
+    match /students/{studentId} {
+      function isValidStudent(data) {
+        return data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+               data.studentId is string && data.studentId.size() > 0 &&
+               data.grade is string &&
+               data.class is string &&
+               data.totalPoints is number;
+      }
+      
+      allow get: if isSignedIn();
+      allow list: if isSignedIn(); 
+      allow create: if (isAdmin() || isPJ()) && isValidStudent(incoming());
+      allow update: if isPJ() && isValidStudent(incoming());
+      allow delete: if isPJ();
+    }
+
+    // Violation Categories
+    match /violationCategories/{catId} {
+      function isValidCategory(data) {
+        return data.name is string && data.name.size() > 0 &&
+               data.points is number && data.points >= 0;
+      }
+      
+      allow get: if isSignedIn();
+      allow list: if isSignedIn();
+      allow create, update: if isPJ() && isValidCategory(incoming());
+      allow delete: if isPJ();
+    }
+
+    // Violations
+    match /violations/{violationId} {
+      function isValidViolation(data) {
+        return data.studentId is string &&
+               data.categoryId is string &&
+               data.points is number &&
+               data.violationDate is number;
+      }
+      
+      allow get: if isSignedIn();
+      allow list: if isSignedIn();
+      allow create: if isPJ() && isValidViolation(incoming()) && 
+                    incoming().reportedById == request.auth.uid;
+      allow update: if isPJ() && isValidViolation(incoming());
+      allow delete: if isPJ();
+    }
+
+    // Notifications
+    match /notifications/{notificationId} {
+      function isValidNotification(data) {
+        return data.type is string &&
+               data.title is string &&
+               data.message is string &&
+               data.timestamp is number &&
+               data.read is bool &&
+               data.targetRoles is list;
+      }
+
+      allow list: if isSignedIn() && (isAdmin() || isPJ());
+      allow create: if isPJ() && isValidNotification(incoming());
+      allow update: if (isAdmin() || isPJ()) && incoming().read == true;
+      allow delete: if isAdmin();
+    }
+
+    // System Config
+    match /system_config/{configId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+  }
+}
