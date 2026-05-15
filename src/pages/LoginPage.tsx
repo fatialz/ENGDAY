@@ -7,21 +7,27 @@ import { Shield, Languages } from 'lucide-react';
 import { authService } from '../services/authService';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useState } from 'react';
+import { useToastStore } from '../store/useToastStore';
 
 export function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const [isLoggingIn, setIsLoggingIn] = useState(false);
-
+  const { addToast } = useToastStore();
   const from = (location.state as any)?.from?.pathname || "/app";
 
   const handleLogin = async () => {
     setIsLoggingIn(true);
     try {
       await authService.login();
+      addToast("Successfully logged in", "success");
       navigate(from, { replace: true });
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
+      const message = error.code === 'auth/popup-blocked' 
+        ? "Popup blocked by browser. Please enable popups for this site."
+        : "Failed to sign in. Please check your internet connection or account.";
+      addToast(message, "error");
     } finally {
       setIsLoggingIn(false);
     }

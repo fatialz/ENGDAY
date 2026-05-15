@@ -51,10 +51,11 @@ export const authService = {
     if (userDoc && userDoc.exists()) {
       let profile = userDoc.data() as UserProfile;
       
-      // Auto-promote @belajar.id users if they are not already PJ or ADMIN
-      // (Though currently everyone is at least ADMIN, but if we add GUEST later this is useful)
+      // Auto-promote @smk.belajar.id users if they are not already PJ or ADMIN
       const email = firebaseUser.email || '';
-      if (email.endsWith('@belajar.id') && profile.role !== UserRole.ADMIN && profile.role !== UserRole.PJ) {
+      const isBelajarId = email.endsWith('@smk.belajar.id') || email.endsWith('@belajar.id');
+      
+      if (isBelajarId && profile.role !== UserRole.ADMIN && profile.role !== UserRole.PJ) {
         profile.role = UserRole.ADMIN;
         const userDocRef = doc(db, 'users', firebaseUser.uid);
         await setDoc(userDocRef, profile, { merge: true });
@@ -81,7 +82,7 @@ export const authService = {
       const masterEmails = ['fatia7056@gmail.com', 'fatiazahra5690@gmail.com'];
       const email = firebaseUser.email || '';
       const isMaster = masterEmails.includes(email);
-      const isBelajarId = email.endsWith('@belajar.id');
+      const isBelajarId = email.endsWith('@smk.belajar.id') || email.endsWith('@belajar.id');
 
       let role = UserRole.PJ; // Default to PJ for new users
       if (isFirstUser || isMaster) {

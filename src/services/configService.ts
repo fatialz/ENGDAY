@@ -36,11 +36,9 @@ export const configService = {
         return snap.data() as SystemConfig;
       }
       
-      // Initialize if not exists
-      await setDoc(ref, DEFAULT_CONFIG);
       return DEFAULT_CONFIG;
     } catch (error) {
-      handleFirestoreError(error, OperationType.GET, CONFIG_COLL);
+      console.warn('System config not found or inaccessible, using defaults');
       return DEFAULT_CONFIG;
     }
   },
